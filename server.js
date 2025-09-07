@@ -43,6 +43,7 @@ import cors from "cors";
 
 const allowedOrigins = [
   process.env.FRONTEND_URL?.replace(/\/$/, ""), // remove trailing slash
+  "https://sih-dashboard-seven.vercel.app", // Your specific frontend URL
   "http://localhost:5173",
   "http://localhost:3000"
 ].filter(Boolean);
@@ -87,8 +88,34 @@ app.use(cors({
   credentials: true,
 }));
 
-// Preflight explicitly
-app.options("*", cors());
+app.options("*", cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    const isDeploymentDomain = deploymentDomains.some(pattern => {
+      const regex = new RegExp(pattern.replace(/\*/g, '.*'));
+      return regex.test(origin);
+    });
+    
+    if (isDeploymentDomain) {
+      return callback(null, true);
+    }
+    
+    if (process.env.NODE_ENV === 'development' && origin.startsWith('http://localhost:')) {
+      return callback(null, true);
+    }
+    
+    console.log('CORS blocked origin:', origin);
+    return callback(new Error("Not allowed by CORS"));
+  },
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+  credentials: true,
+}));
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));

@@ -41,81 +41,52 @@ app.use('/api/', limiter);
 
 import cors from "cors";
 
+// Define allowed origins explicitly
 const allowedOrigins = [
-  process.env.FRONTEND_URL?.replace(/\/$/, ""), // remove trailing slash
-  "https://sih-dashboard-seven.vercel.app", // Your specific frontend URL
+  "https://sih-dashboard-seven.vercel.app",
   "http://localhost:5173",
-  "http://localhost:3000"
+  "http://localhost:3000",
+  process.env.FRONTEND_URL?.replace(/\/$/, "")
 ].filter(Boolean);
 
-// Add common deployment domains
-const deploymentDomains = [
-  "https://*.vercel.app",
-  "https://*.netlify.app", 
-  "https://*.github.io"
-];
+console.log('Allowed origins:', allowedOrigins);
 
-app.use(cors({
-  origin: (origin, callback) => {
+// CORS configuration
+const corsOptions = {
+  origin: function (origin, callback) {
+    console.log('CORS request from origin:', origin);
+    
     // Allow requests with no origin (mobile apps, Postman, etc.)
-    if (!origin) return callback(null, true);
+    if (!origin) {
+      console.log('No origin - allowing request');
+      return callback(null, true);
+    }
     
-    // Check exact matches first
+    // Check if origin is in allowed list
     if (allowedOrigins.includes(origin)) {
+      console.log('Origin allowed:', origin);
       return callback(null, true);
     }
     
-    // Check if origin matches deployment patterns
-    const isDeploymentDomain = deploymentDomains.some(pattern => {
-      const regex = new RegExp(pattern.replace(/\*/g, '.*'));
-      return regex.test(origin);
-    });
-    
-    if (isDeploymentDomain) {
-      return callback(null, true);
-    }
-    
-    // In development, allow localhost with any port
-    if (process.env.NODE_ENV === 'development' && origin.startsWith('http://localhost:')) {
+    // Check if it's a Vercel app
+    if (origin.includes('.vercel.app')) {
+      console.log('Vercel app detected - allowing:', origin);
       return callback(null, true);
     }
     
     console.log('CORS blocked origin:', origin);
-    return callback(new Error("Not allowed by CORS"));
+    return callback(new Error(`Origin ${origin} not allowed by CORS`));
   },
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   credentials: true,
-}));
+  optionsSuccessStatus: 200
+};
 
-app.options("*", cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
-    
-    const isDeploymentDomain = deploymentDomains.some(pattern => {
-      const regex = new RegExp(pattern.replace(/\*/g, '.*'));
-      return regex.test(origin);
-    });
-    
-    if (isDeploymentDomain) {
-      return callback(null, true);
-    }
-    
-    if (process.env.NODE_ENV === 'development' && origin.startsWith('http://localhost:')) {
-      return callback(null, true);
-    }
-    
-    console.log('CORS blocked origin:', origin);
-    return callback(new Error("Not allowed by CORS"));
-  },
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
-  credentials: true,
-}));
+app.use(cors(corsOptions));
+
+// Handle preflight requests with the same CORS config
+app.options("*", cors(corsOptions));
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -149,9 +120,19 @@ app.get('/cors-debug', (req, res) => {
   res.json({
     origin: req.get('Origin'),
     allowedOrigins: allowedOrigins,
-    deploymentDomains: deploymentDomains,
     environment: process.env.NODE_ENV,
-    frontendUrl: process.env.FRONTEND_URL
+    frontendUrl: process.env.FRONTEND_URL,
+    message: 'CORS debug endpoint working'
+  });
+});
+
+// Simple test endpoint
+app.get('/test', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Backend is working!',
+    origin: req.get('Origin'),
+    timestamp: new Date().toISOString()
   });
 });
 

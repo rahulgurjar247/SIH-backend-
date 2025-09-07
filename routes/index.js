@@ -5,6 +5,8 @@ import adminRoutes from './admin.js';
 import notificationRoutes from './notifications.js';
 import analyticsRoutes from './analytics.js';
 import userRoutes from './users.js';
+import departmentRoutes from './departments.js';
+import locationRoutes from './locations.js';
 
 const router = express.Router();
 
@@ -15,6 +17,8 @@ router.use('/admin', adminRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/users', userRoutes);
+router.use('/departments', departmentRoutes);
+router.use('/locations', locationRoutes);
 
 // Health check endpoint
 router.get('/health', (req, res) => {

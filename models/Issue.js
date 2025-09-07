@@ -90,6 +90,28 @@ const issueSchema = new mongoose.Schema({
       default: Date.now
     }
   }],
+  updates: [{
+    note: {
+      type: String,
+      trim: true,
+      maxlength: 1000,
+    },
+    images: [{
+      url: { type: String, required: true },
+      publicId: String,
+      width: Number,
+      height: Number,
+      format: String,
+      bytes: Number,
+      uploadedAt: { type: Date, default: Date.now }
+    }],
+    status: {
+      type: String,
+      enum: ['pending', 'acknowledged', 'in-progress', 'resolved', 'rejected'],
+    },
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+    createdAt: { type: Date, default: Date.now }
+  }],
   lastUpdated: {
     type: Date,
     default: Date.now

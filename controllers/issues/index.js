@@ -5,3 +5,4 @@ export * from './getIssuesController.js';
 export * from './updateIssueController.js';
 export * from './voteIssueController.js';
 export * from './nearbyIssuesController.js';
+export * from './issueUpdatesController.js';

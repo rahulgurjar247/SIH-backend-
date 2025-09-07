@@ -10,6 +10,7 @@ import {
 } from '../controllers/index.js';
 import { protect, authorize } from '../middleware/index.js';
 import { cloudinaryUpload, handleUploadError } from '../middleware/cloudinaryUpload.js';
+import { addIssueUpdate, getIssueUpdates } from '../controllers/index.js';
 
 const router = express.Router();
 
@@ -158,6 +159,30 @@ router.put('/:id', protect, [
   }
 });
 
-// ...existing code...
+// @route   GET /api/issues/:id/updates
+// @desc    Get progress updates for an issue
+// @access  Private (authorized roles)
+router.get('/:id/updates', protect, getIssueUpdates);
+
+// @route   POST /api/issues/:id/updates
+// @desc    Add a progress update (note, optional images, optional status change)
+// @access  Private (admin/department/staff)
+router.post(
+  '/:id/updates',
+  protect,
+  cloudinaryUpload,
+  handleUploadError,
+  [
+    body('note').optional().isLength({ max: 1000 }).withMessage('Note too long'),
+    body('status').optional().isIn(['pending', 'acknowledged', 'in-progress', 'resolved', 'rejected']).withMessage('Invalid status'),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ success: false, message: 'Validation errors', errors: errors.array() });
+    }
+    await addIssueUpdate(req, res);
+  }
+);
 
 export default router;

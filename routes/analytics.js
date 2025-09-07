@@ -7,12 +7,84 @@ import {
   getUserStats, 
   getPerformanceMetrics 
 } from '../controllers/index.js';
+import { 
+  getDashboardAnalytics,
+  getUserAnalytics 
+} from '../controllers/analytics/dashboardAnalyticsController.js';
 import { protect, authorize } from '../middleware/index.js';
 
 const router = express.Router();
 
 // All analytics routes require authentication
 router.use(protect);
+
+// @route   GET /api/v1/analytics/dashboard
+// @desc    Get comprehensive dashboard analytics
+// @access  Private
+router.get('/dashboard', [
+  query('startDate')
+    .optional()
+    .isISO8601()
+    .withMessage('Start date must be a valid ISO 8601 date'),
+  query('endDate')
+    .optional()
+    .isISO8601()
+    .withMessage('End date must be a valid ISO 8601 date'),
+  query('department')
+    .optional()
+    .isMongoId()
+    .withMessage('Department must be a valid ID')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation errors',
+        errors: errors.array()
+      });
+    }
+    await getDashboardAnalytics(req, res);
+  } catch (error) {
+    console.error('Dashboard analytics error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching dashboard analytics'
+    });
+  }
+});
+
+// @route   GET /api/v1/analytics/users
+// @desc    Get user analytics (Admin only)
+// @access  Private (Admin only)
+router.get('/users', authorize('admin'), [
+  query('startDate')
+    .optional()
+    .isISO8601()
+    .withMessage('Start date must be a valid ISO 8601 date'),
+  query('endDate')
+    .optional()
+    .isISO8601()
+    .withMessage('End date must be a valid ISO 8601 date')
+], async (req, res) => {
+  try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation errors',
+        errors: errors.array()
+      });
+    }
+    await getUserAnalytics(req, res);
+  } catch (error) {
+    console.error('User analytics error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error while fetching user analytics'
+    });
+  }
+});
 
 // @route   GET /api/analytics/issues-overview
 // @desc    Get issues overview statistics

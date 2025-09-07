@@ -43,19 +43,47 @@ import cors from "cors";
 
 const allowedOrigins = [
   process.env.FRONTEND_URL?.replace(/\/$/, ""), // remove trailing slash
-  "http://localhost:5173"
+  "http://localhost:5173",
+  "http://localhost:3000"
+].filter(Boolean);
+
+// Add common deployment domains
+const deploymentDomains = [
+  "https://*.vercel.app",
+  "https://*.netlify.app", 
+  "https://*.github.io"
 ];
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // allow non-browser clients (React Native, Postman)
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Check exact matches first
     if (allowedOrigins.includes(origin)) {
       return callback(null, true);
     }
+    
+    // Check if origin matches deployment patterns
+    const isDeploymentDomain = deploymentDomains.some(pattern => {
+      const regex = new RegExp(pattern.replace(/\*/g, '.*'));
+      return regex.test(origin);
+    });
+    
+    if (isDeploymentDomain) {
+      return callback(null, true);
+    }
+    
+    // In development, allow localhost with any port
+    if (process.env.NODE_ENV === 'development' && origin.startsWith('http://localhost:')) {
+      return callback(null, true);
+    }
+    
+    console.log('CORS blocked origin:', origin);
     return callback(new Error("Not allowed by CORS"));
   },
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   credentials: true,
 }));
 
@@ -83,7 +111,20 @@ app.get('/health', (req, res) => {
     success: true,
     message: 'Server is running',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    allowedOrigins: allowedOrigins,
+    frontendUrl: process.env.FRONTEND_URL
+  });
+});
+
+// CORS debug endpoint
+app.get('/cors-debug', (req, res) => {
+  res.json({
+    origin: req.get('Origin'),
+    allowedOrigins: allowedOrigins,
+    deploymentDomains: deploymentDomains,
+    environment: process.env.NODE_ENV,
+    frontendUrl: process.env.FRONTEND_URL
   });
 });
 

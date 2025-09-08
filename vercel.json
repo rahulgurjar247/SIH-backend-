@@ -12,7 +12,7 @@
             "dest": "/server.js",
             "methods" : ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
             "headers" : {
-                "Access-Control-Allow-Origin" : "*",
+                "Access-Control-Allow-Origin" : "https://sih-dashboard-seven.vercel.app",
                 "Access-Control-Allow-Headers" : "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version"
             ,   "Access-Control-Allow-Credentials" : "true"
             }

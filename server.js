@@ -124,6 +124,15 @@ app.get("/cors-debug", (req, res) => {
   });
 });
 
+// Also expose under API prefix to ensure routing always reaches this handler in production
+app.get("/api/v1/cors-debug", (req, res) => {
+  res.json({
+    origin: req.get("Origin"),
+    allowedOrigins,
+    message: "CORS debug endpoint working (api)",
+  });
+});
+
 // ----------------- API Routes -----------------
 app.use("/api/v1", routes);
 

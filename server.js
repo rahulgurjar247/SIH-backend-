@@ -25,6 +25,9 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+// Trust proxy when running behind Vercel/Reverse proxy so rate-limit & IP work
+app.set("trust proxy", 1);
+
 // ----------------- Security Middleware -----------------
 app.use(helmet());
 app.use(compression());
@@ -89,6 +92,9 @@ app.use((req, res, next) => {
 });
 
 app.use(cors(corsOptions));
+
+// Ensure OPTIONS to API routes are handled here (some platforms treat OPTIONS specially)
+app.options("/api/*", cors(corsOptions));
 
 // ----------------- Body Parsing -----------------
 app.use(express.json({ limit: "10mb" }));

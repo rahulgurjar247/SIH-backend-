@@ -65,8 +65,30 @@ const corsOptions = {
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
 };
 
+// Explicit preflight handler to ensure no wildcard '*' leaks on Vercel
+app.use((req, res, next) => {
+  const requestOrigin = req.headers.origin;
+  if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
+    res.header("Access-Control-Allow-Origin", requestOrigin);
+    res.header("Vary", "Origin");
+    res.header("Access-Control-Allow-Credentials", "true");
+    res.header(
+      "Access-Control-Allow-Methods",
+      "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+    );
+    res.header(
+      "Access-Control-Allow-Headers",
+      "Authorization, Content-Type, X-Requested-With"
+    );
+  }
+
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
+  next();
+});
+
 app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // enable global CORS preflight handling
 
 // ----------------- Body Parsing -----------------
 app.use(express.json({ limit: "10mb" }));

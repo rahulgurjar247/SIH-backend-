@@ -48,6 +48,7 @@ const allowedOrigins = [
   "https://sih-dashboard-seven.vercel.app", // frontend prod
   "http://localhost:5173", // vite local
   "http://localhost:3000", // react local
+  "http://localhost:8081"
 ];
 
 // Allow FRONTEND_URL from env if provided (avoids hardcoding in multiple places)

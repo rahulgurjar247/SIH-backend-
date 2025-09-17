@@ -59,6 +59,7 @@ export const uploadToCloudinary = async (fileBuffer, folder = 'civic-issues', pu
  * @param {string} folder - Cloudinary folder path
  * @returns {Promise<Array>} Array of upload results
  */
+
 export const uploadMultipleToCloudinary = async (files, folder = 'civic-issues') => {
   const uploadPromises = files.map((file, index) => {
     const publicId = `${folder}/${Date.now()}-${index}`;

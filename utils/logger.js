@@ -34,6 +34,7 @@ class Logger {
     return baseMessage;
   }
 
+  
   info(message, data = null) {
     const formattedMessage = this.formatMessage('info', message, data);
     if (this.isDevelopment) {

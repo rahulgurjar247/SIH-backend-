@@ -22,14 +22,14 @@ router.post('/create', protect, cloudinaryUpload, handleUploadError, [
     .trim()
     .notEmpty()
     .withMessage('Issue title is required')
-    .isLength({ max: 100 })
-    .withMessage('Title cannot be more than 100 characters'),
+    .isLength({ min: 5, max: 200 })
+    .withMessage('Title must be between 5 and 200 characters'),
   body('description')
     .trim()
     .notEmpty()
     .withMessage('Issue description is required')
-    .isLength({ max: 500 })
-    .withMessage('Description cannot be more than 500 characters'),
+    .isLength({ min: 10, max: 2000 })
+    .withMessage('Description must be between 10 and 2000 characters'),
   body('category')
     .isIn(['road', 'water', 'electricity', 'garbage', 'drainage', 'park', 'traffic', 'other'])
     .withMessage('Invalid issue category'),
@@ -38,33 +38,97 @@ router.post('/create', protect, cloudinaryUpload, handleUploadError, [
     .isIn(['low', 'medium', 'high', 'critical'])
     .withMessage('Invalid priority level'),
   body('coordinates')
+    .optional()
     .custom((value) => {
+      if (!value) {
+        return true; // coordinates are optional
+      }
+      
       try {
-        const coords = JSON.parse(value);
+        let coords;
+        
+        // Handle string format from FormData (React Native)
+        if (typeof value === 'string') {
+          coords = JSON.parse(value);
+        } 
+        // Handle array format from direct JSON
+        else if (Array.isArray(value)) {
+          coords = value;
+        } 
+        else {
+          throw new Error('Invalid coordinates format');
+        }
+        
         if (!Array.isArray(coords) || coords.length !== 2) {
           throw new Error('Coordinates must be an array of [longitude, latitude]');
         }
-        if (typeof coords[0] !== 'number' || typeof coords[1] !== 'number') {
+        
+        const [longitude, latitude] = coords.map(coord => parseFloat(coord));
+        
+        if (isNaN(longitude) || isNaN(latitude)) {
           throw new Error('Coordinates must be valid numbers');
         }
+        
+        if (longitude < -180 || longitude > 180 || latitude < -90 || latitude > 90) {
+          throw new Error('Invalid coordinate values. Longitude: -180 to 180, Latitude: -90 to 90');
+        }
+        
         return true;
       } catch (error) {
-        throw new Error('Invalid coordinates format');
+        throw new Error(`Invalid coordinates format: ${error.message}`);
       }
+    }),
+  body('address')
+    .optional()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage('Address cannot be more than 500 characters'),
+  body('tags')
+    .optional()
+    .custom((value) => {
+      if (!value) return true;
+      
+      // Handle string format (comma separated)
+      if (typeof value === 'string') {
+        const tags = value.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+        if (tags.length > 10) {
+          throw new Error('Maximum 10 tags allowed');
+        }
+        return true;
+      }
+      
+      // Handle array format
+      if (Array.isArray(value)) {
+        if (value.length > 10) {
+          throw new Error('Maximum 10 tags allowed');
+        }
+        return true;
+      }
+      
+      throw new Error('Tags must be a string or array');
+    }),
+  body('isAnonymous')
+    .optional()
+    .custom((value) => {
+      // Handle string 'true'/'false' from FormData or boolean
+      if (value === 'true' || value === 'false' || typeof value === 'boolean') {
+        return true;
+      }
+      throw new Error('isAnonymous must be true or false');
     })
 ], async (req, res) => {
   try {
-    console.log("cook")
+    console.log("🔍 Validation check starting...");
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      console.log("1")
+      console.log("❌ Validation errors found:", errors.array());
       return res.status(400).json({
         success: false,
         message: 'Validation errors',
         errors: errors.array()
       });
     }
-    console.log("2")
+    console.log("✅ Validation passed, calling createIssue controller...");
     await createIssue(req, res);
   } catch (error) {
     console.error('Create issue error:', error);
@@ -124,13 +188,13 @@ router.put('/:id', protect, [
   body('title')
     .optional()
     .trim()
-    .isLength({ max: 100 })
-    .withMessage('Title cannot be more than 100 characters'),
+    .isLength({ min: 5, max: 200 })
+    .withMessage('Title must be between 5 and 200 characters'),
   body('description')
     .optional()
     .trim()
-    .isLength({ max: 500 })
-    .withMessage('Description cannot be more than 500 characters'),
+    .isLength({ min: 10, max: 2000 })
+    .withMessage('Description must be between 10 and 2000 characters'),
   body('category')
     .optional()
     .isIn(['road', 'water', 'electricity', 'garbage', 'drainage', 'park', 'traffic', 'other'])

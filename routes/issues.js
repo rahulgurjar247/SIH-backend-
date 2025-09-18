@@ -45,18 +45,11 @@ router.post('/create', protect, cloudinaryUpload, handleUploadError, [
       }
       
       try {
-        let coords;
+        let coords = value;
         
-        // Handle string format from FormData (React Native)
+        // When coming from FormData (like from React Native), it will be a string.
         if (typeof value === 'string') {
           coords = JSON.parse(value);
-        } 
-        // Handle array format from direct JSON
-        else if (Array.isArray(value)) {
-          coords = value;
-        } 
-        else {
-          throw new Error('Invalid coordinates format');
         }
         
         if (!Array.isArray(coords) || coords.length !== 2) {
